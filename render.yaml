@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: flo-agency-api
+    name: afftestwork-api
     runtime: node
     rootDir: server
     buildCommand: npm install

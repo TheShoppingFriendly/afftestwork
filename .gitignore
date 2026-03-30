@@ -6,3 +6,5 @@ dist/
 .DS_Store
 .vscode/
 coverage/
+.env.example
+.env.development
