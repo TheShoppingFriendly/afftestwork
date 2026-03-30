@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: flo-agency-api
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false          # Set this in Render dashboard (from Neon)
+      - key: JWT_SECRET
+        generateValue: true  # Render auto-generates a secure value
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: CLIENT_URL
+        sync: false          # Set to your GitHub Pages URL
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "900000"
+      - key: RATE_LIMIT_MAX
+        value: "100"
+    healthCheckPath: /health
+    autoDeploy: true
