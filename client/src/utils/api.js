@@ -1,24 +1,22 @@
 import axios from 'axios';
 
-const BASE = import.meta.env.VITE_API_URL || '/api';
+const API_BASE = 'https://affwork.onrender.com/api';
 
 const api = axios.create({
-  baseURL: BASE.endsWith('/api') ? BASE : `${BASE}/api`,
-  timeout: 15000,
+  baseURL: API_BASE,
+  timeout: 20000,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: false,
 });
 
-// ── Request: attach access token ──────────────────────────────
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('accessToken');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// ── Response: auto refresh on 401 ────────────────────────────
 let isRefreshing = false;
 let failedQueue = [];
-
 const processQueue = (error, token = null) => {
   failedQueue.forEach(p => error ? p.reject(error) : p.resolve(token));
   failedQueue = [];
@@ -28,8 +26,11 @@ api.interceptors.response.use(
   res => res,
   async err => {
     const original = err.config;
-
-    if (err.response?.status === 401 && err.response?.data?.code === 'TOKEN_EXPIRED' && !original._retry) {
+    if (
+      err.response?.status === 401 &&
+      err.response?.data?.code === 'TOKEN_EXPIRED' &&
+      !original._retry
+    ) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -38,18 +39,14 @@ api.interceptors.response.use(
           return api(original);
         });
       }
-
       original._retry = true;
       isRefreshing = true;
-
       try {
         const refreshToken = localStorage.getItem('refreshToken');
         if (!refreshToken) throw new Error('No refresh token');
-
-        const { data } = await axios.post(`${BASE}/auth/refresh`, { refreshToken });
+        const { data } = await axios.post(`${API_BASE}/auth/refresh`, { refreshToken });
         localStorage.setItem('accessToken', data.accessToken);
         localStorage.setItem('refreshToken', data.refreshToken);
-
         processQueue(null, data.accessToken);
         original.headers.Authorization = `Bearer ${data.accessToken}`;
         return api(original);
@@ -57,15 +54,15 @@ api.interceptors.response.use(
         processQueue(refreshErr, null);
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
+        window.location.href = '/afftestwork/login';
         return Promise.reject(refreshErr);
       } finally {
         isRefreshing = false;
       }
     }
-
     return Promise.reject(err);
   }
 );
 
 export default api;
+export { API_BASE };
